@@ -54,6 +54,9 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import no.jsc.jme3.lab.control.*;
 import no.jsc.jme3.lab.domain.Item;
 import no.jsc.jme3.lab.domain.Player;
@@ -102,6 +105,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 	// Debug visuals
 	Geometry debugMark1;
 	Geometry debugMark2;
+	Geometry debugMark3;
 	Geometry debugArrow1;
 	Geometry debugArrow2;
 	Geometry debugArrow3;
@@ -124,10 +128,12 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		asg.setDisplayStatView( false );
 		asg.setDisplayFps( true );
 		asg.start();
+		asg.testSnaps();
 	}
 
 	@Override
 	public void simpleInitApp() {
+		Logger.getLogger("com.jme").setLevel(Level.OFF);
 		bulletAppState = new BulletAppState();
 		bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
 
@@ -223,16 +229,22 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 	/** A red ball that marks the last spot that was "hit" by the "shot". */
 	protected void prepareDebugVisuals() {
-		Material debugMarkMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-		debugMarkMat.setColor("Color", ColorRGBA.Red);
+		Material debugMarkMat1 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+		debugMarkMat1.setColor("Color", ColorRGBA.Red);
+		Material debugMarkMat2 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+		debugMarkMat2.setColor("Color", ColorRGBA.White);
 		
 		Sphere sphere1 = new Sphere(6, 6, 0.04f);
 		debugMark1 = new Geometry("debugMark1", sphere1);
-		debugMark1.setMaterial(debugMarkMat);
+		debugMark1.setMaterial(debugMarkMat1);
 		
 		Sphere sphere2 = new Sphere(6, 6, 0.04f);
 		debugMark2 = new Geometry("debugMark2", sphere2);
-		debugMark2.setMaterial(debugMarkMat);
+		debugMark2.setMaterial(debugMarkMat1);
+		
+		Sphere sphere3 = new Sphere(6, 6, 0.04f);
+		debugMark3 = new Geometry("debugMark3", sphere3);
+		debugMark3.setMaterial(debugMarkMat2);
 
 		Material debugArrowMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
 		debugArrowMat.setColor("Color", ColorRGBA.Blue);
@@ -466,7 +478,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 		Vector3f viewDir = cam.getDirection().normalize();
 		Vector3f leftDir = YAW090.mult(viewDir).normalize();
-		float pushForceAmp = 5f;
+		float pushForceAmp = 3f;
 
 		if (enviroment.equals( Enviroment.INTERIOR)) {
 			viewDir.y = 0;
@@ -590,7 +602,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		if ( enviroment.equals( Enviroment.INTERIOR )) {
 			System.out.println("to space");
 			// TODO Give a tiny up forcePush
-			characterControl.setForceDamping(0.3f);
+			characterControl.setForceDamping(0.4f);
 			characterControl.setJumpSpeed(0);
 			characterControl.setFallSpeed(0);
 			characterControl.setGravity(0);
@@ -676,15 +688,17 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 	public void makeMasterBlox() {
 		Vector3f inFront = characterControl.getPhysicsLocation();
-		Blox blox = new Blox(Vector3f.ZERO, assetManager);
+		Blox blox = new Blox("MasterBlox", assetManager);
 		blox.setLocalRotation( cam.getRotation() );
 		blox.setLocalTranslation( inFront.add( cam.getDirection().normalize().mult(3f)) );
-		Node node = new Node("MasterBlox");
+		Node node = new Node( "MasterBlox" );
 		node.attachChild( blox );
 		constructionNodes.add( node );
-		rootNode.attachChild(node);
-
-
+		rootNode.attachChild( node );
+		
+		System.out.println("[makeMasterBlox]    loc: " + blox.getLocalTranslation() + "    rot: " + blox.getLocalRotation());
+		
+		
 	}
 
 	public void rayCaster() {
@@ -695,22 +709,25 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		ray.setLimit(14f);
 		// 3. Collect intersections between Ray and Shootables in results list.<Node>
 		//Node node;
-		
+				
+		// rotation/translation in world coordinates will always be around/relative to the origin
+		// and that local means local in relation to its parent node
+
+		// TODO Refactor to disregard on Player-Newblox collision.
 		for (Node node : constructionNodes) {
-			
-//		}
-//		for (Iterator<Node> iterator = constructionNodes.iterator(); iterator.hasNext();) {
-//			node = iterator.next();
 			node.collideWith(ray, results);
 			if ( results.size() > 0 ) {
 				CollisionResult closestCollision = results.getClosestCollision();
 				Triangle impactedTriangle = closestCollision.getTriangle(null);
 				float dist = closestCollision.getDistance();
 				Vector3f pt = closestCollision.getContactPoint();
-				String hit = closestCollision.getGeometry().getName();
-				System.out.println("[rayCaster]    impact " + hit + " at " + pt + "    dist: " + dist );
+				
+				String impactedSpatial = closestCollision.getGeometry().getName();
+				System.out.println("[rayCaster]    impact " + impactedSpatial + " at " + pt + "    dist: " + dist );
 				System.out.println("[rayCaster]    colNormal " + closestCollision.getContactNormal() + "   length: " +closestCollision.getContactNormal().length() );
 
+				//<Node>
+				// If too close to impact, disregard collision.
 
 				// Debugging visuals
 				debugMark1.setLocalTranslation(pt);
@@ -724,10 +741,47 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 				Vector3f newBloxLoc = new Vector3f( pt.add( closestCollision.getContactNormal().mult(0.5f) ));
 
+
+				Blox impactedBlox = ((Blox)closestCollision.getGeometry());
+				Vector3f impactedBloxLoc = impactedBlox.getLocalTranslation();
+				newBloxLoc = impactedBloxLoc.add(closestCollision.getContactNormal());
+				Blox newBlox = new Blox( "GrownBlox", assetManager);
+				newBlox.setLocalRotation( impactedBlox.getLocalRotation() );
+				newBlox.setLocalTranslation( newBloxLoc );
+				node.attachChild( newBlox );
+				System.out.println("newBloxLoc: " + newBloxLoc + "    rot: " + newBlox.getLocalRotation());
 				debugMark2.setLocalTranslation(newBloxLoc);
 				rootNode.attachChild(debugMark2);
+				/*
+				Blox masterBlox = (Blox)node.getChild("MasterBlox");
+				Vector3f masterBloxLoc = masterBlox.getLocalTranslation();
 				
-				//impactedTriangle.
+				System.out.println("masterBlox: " + masterBloxLoc );
+				System.out.println("newBloxLoc: " + newBloxLoc );
+				
+				Float modX = newBloxLoc.x - masterBloxLoc.x;
+				Float modY = newBloxLoc.y - masterBloxLoc.y;
+				Float modZ = newBloxLoc.z - masterBloxLoc.z;
+				
+				System.out.println("mod X: " + modX );
+				System.out.println("mod Y: " + modY );
+				System.out.println("mod Z: " + modZ );
+
+				if ( !modX.isNaN() )	newBloxLoc.setX( newBloxLoc.x + modX);
+				if ( !modY.isNaN() )	newBloxLoc.setY( newBloxLoc.y + modY);
+				if ( !modZ.isNaN() )	newBloxLoc.setZ( newBloxLoc.z + modZ);
+
+				System.out.println("adjusted newBloxLoc: " + newBloxLoc );
+				
+				debugMark3.setLocalTranslation( newBloxLoc);
+				rootNode.attachChild(debugMark3);
+				
+				*/
+				
+				// Check if surface can be expanded.
+				// Only squares
+				
+				//impactedTriangle
 				//Blox newBlox = new Blox(closestCollision.getContactNormal(), assetManager);
 				//Blox newBlox = new Blox(newBloxLoc, assetManager);
 				//node.attachChild( newBlox );
@@ -737,6 +791,8 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				
 			} else {
 				rootNode.detachChild(debugMark1);
+				rootNode.detachChild(debugMark2);
+				rootNode.detachChild(debugMark3);
 				rootNode.detachChild(debugArrow1);
 				rootNode.detachChild(debugArrow2);
 				rootNode.detachChild(debugArrow3);
@@ -812,4 +868,45 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 	private PhysicsSpace getPhysicsSpace() {
 		return bulletAppState.getPhysicsSpace();
 	}
+	
+	private Vector3f snapToVisualGrid( Vector3f v ) {
+		v.setX( (float) (Math.floor(v.getX() * 100) / 100) );
+		v.setY( (float) (Math.floor(v.getY() * 100) / 100) );
+		v.setZ( (float) (Math.floor(v.getZ() * 100) / 100) );
+		return v;
+	}
+	
+	private Vector3f snapToConstructionGrid( Vector3f gridPoint, Vector3f v ) {
+		Float diffX = unitSize % v.getX(); //  gridPoint.getX();
+		Float diffY = unitSize % v.getY();// - gridPoint.getY();
+		Float diffZ = unitSize % v.getZ();// - gridPoint.getZ();
+		System.out.println("[snap] diffX: " + diffX );
+		System.out.println("[snap] diffY: " + diffY );
+		System.out.println("[snap] diffZ: " + diffZ );
+		
+		//<Node>
+		float halfSize = unitSize / 2;
+		if ( diffX > halfSize ) {	v.setX( v.x - diffX ); }
+		else { v.setX( v.x + diffX ); }
+		if ( diffY > halfSize ) {	v.setY( v.y - diffY ); }
+		else { v.setY( v.y + diffY ); }
+		if ( diffZ > halfSize ) {	v.setZ( v.z - diffZ ); }
+		else { v.setZ( v.z + diffZ ); }
+		return v;
+	}
+	
+	private void testSnaps() {
+		Vector3f v1 = new Vector3f(1.81f, 19.49799f, 22.10006f);
+
+		Vector3f origin = new Vector3f( 10.01f, 10.02f, 0.03f );
+		System.out.println( "constGrid: " + origin );
+		System.out.println( "v1:        " + snapToVisualGrid( v1 ) );
+
+		snapToConstructionGrid( origin, v1 );
+		System.out.println( "v1 adj:    " + v1 );
+		System.out.println( "expect:    (2.01, 19.02, 22.03)" );
+		
+	}
+	
+
 }
