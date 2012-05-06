@@ -847,7 +847,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 			 */
 		}
 
-
+ 
 	}
 
 	public void plasmaBomb() {
