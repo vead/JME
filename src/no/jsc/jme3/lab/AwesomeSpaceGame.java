@@ -128,12 +128,13 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		asg.setDisplayStatView( false );
 		asg.setDisplayFps( true );
 		asg.start();
-		asg.testSnaps();
 	}
 
 	@Override
 	public void simpleInitApp() {
-		Logger.getLogger("com.jme").setLevel(Level.OFF);
+//		Logger.getLogger("com.jme").setLevel(Level.OFF);
+		java.util.logging.Logger.getLogger("").setLevel(Level.SEVERE);
+		
 		bulletAppState = new BulletAppState();
 		bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
 
@@ -233,6 +234,8 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		debugMarkMat1.setColor("Color", ColorRGBA.Red);
 		Material debugMarkMat2 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
 		debugMarkMat2.setColor("Color", ColorRGBA.White);
+		Material debugMarkMat3 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+		debugMarkMat3.setColor("Color", ColorRGBA.Yellow);
 		
 		Sphere sphere1 = new Sphere(6, 6, 0.04f);
 		debugMark1 = new Geometry("debugMark1", sphere1);
@@ -240,11 +243,11 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		
 		Sphere sphere2 = new Sphere(6, 6, 0.04f);
 		debugMark2 = new Geometry("debugMark2", sphere2);
-		debugMark2.setMaterial(debugMarkMat1);
+		debugMark2.setMaterial(debugMarkMat2);
 		
 		Sphere sphere3 = new Sphere(6, 6, 0.04f);
 		debugMark3 = new Geometry("debugMark3", sphere3);
-		debugMark3.setMaterial(debugMarkMat2);
+		debugMark3.setMaterial(debugMarkMat3);
 
 		Material debugArrowMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
 		debugArrowMat.setColor("Color", ColorRGBA.Blue);
@@ -688,20 +691,24 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 	public void makeMasterBlox() {
 		Vector3f inFront = characterControl.getPhysicsLocation();
-		Blox blox = new Blox("MasterBlox", assetManager);
-		blox.setLocalRotation( cam.getRotation() );
-		blox.setLocalTranslation( inFront.add( cam.getDirection().normalize().mult(3f)) );
+		
+
 		Node node = new Node( "MasterBlox" );
+		node.setLocalTranslation( inFront.add( cam.getDirection().normalize().mult(3f)) );
+		
+		Blox blox = new Blox("MasterBlox",null, assetManager);
+		blox.setLocalRotation( cam.getRotation() );
 		node.attachChild( blox );
 		constructionNodes.add( node );
 		rootNode.attachChild( node );
-		
-		System.out.println("[makeMasterBlox]    loc: " + blox.getLocalTranslation() + "    rot: " + blox.getLocalRotation());
-		
-		
+
+		System.out.println("[makeMasterBlox]    bloxRot: " + blox.getLocalRotation() + "    nodeRot: " + node.getLocalRotation() );
+		System.out.println("[makeMasterBlox]    bloxLocal: " + blox.getLocalTranslation() + "  bloxWorld: " + blox.getWorldTranslation() );
+		System.out.println("[makeMasterBlox]    nodeLocal: " + node.getLocalTranslation() + "  nodeWorld: " + node.getWorldTranslation() );
+	
 	}
 
-	public void rayCaster() {
+	public void rayCaster2() {
 		// 1. Reset results list.
 		CollisionResults results = new CollisionResults();
 		// 2. Aim the ray from cam loc to cam direction.
@@ -725,7 +732,8 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				String impactedSpatial = closestCollision.getGeometry().getName();
 				System.out.println("[rayCaster]    impact " + impactedSpatial + " at " + pt + "    dist: " + dist );
 				System.out.println("[rayCaster]    colNormal " + closestCollision.getContactNormal() + "   length: " +closestCollision.getContactNormal().length() );
-
+				System.out.println("[rayCaster]    impactPtToLC " + node.worldToLocal(pt, null) + "   normalEndPtToLC: " + node.worldToLocal(closestCollision.getContactNormal(),null) );
+				
 				//<Node>
 				// If too close to impact, disregard collision.
 
@@ -740,16 +748,21 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				System.out.println("debugArrow1, locTrans: " + debugArrow1.getLocalTranslation() + "   worldTrans: " + debugArrow1.getWorldTranslation() );
 
 				Vector3f newBloxLoc = new Vector3f( pt.add( closestCollision.getContactNormal().mult(0.5f) ));
+//				Vector3f newBloxLoc;
 
-
+				Blox masterBlox = (Blox)node.getChild("MasterBlox");
+				
 				Blox impactedBlox = ((Blox)closestCollision.getGeometry());
 				Vector3f impactedBloxLoc = impactedBlox.getLocalTranslation();
-				newBloxLoc = impactedBloxLoc.add(closestCollision.getContactNormal());
-				Blox newBlox = new Blox( "GrownBlox", assetManager);
+//				newBloxLoc = masterBlox.getLocalCoordTranslation();
+//				newBloxLoc.addLocal( pt.add( closestCollision.getContactNormal() ));
+				Blox newBlox = new Blox( "GrownBlox", null, assetManager);
 				newBlox.setLocalRotation( impactedBlox.getLocalRotation() );
 				newBlox.setLocalTranslation( newBloxLoc );
+				
+				
 				node.attachChild( newBlox );
-				System.out.println("newBloxLoc: " + newBloxLoc + "    rot: " + newBlox.getLocalRotation());
+				System.out.println("newBloxLoc: " + newBloxLoc + "    toLC: " + node.worldToLocal(newBloxLoc, null));
 				debugMark2.setLocalTranslation(newBloxLoc);
 				rootNode.attachChild(debugMark2);
 				/*
@@ -849,6 +862,70 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
  
 	}
+	public void rayCaster() {
+		// 1. Reset results list.
+		CollisionResults results = new CollisionResults();
+		// 2. Aim the ray from cam loc to cam direction.
+		Ray ray = new Ray(cam.getLocation(), cam.getDirection());
+		ray.setLimit(14f);
+		// 3. Collect intersections between Ray and Shootables in results list.<Node>
+		//Node node;
+				
+		// rotation/translation in world coordinates will always be around/relative to the origin
+		// and that local means local in relation to its parent node
+
+		// TODO Refactor to disregard on Player-Newblox collision.
+		for (Node node : constructionNodes) {
+			node.collideWith(ray, results);
+			if ( results.size() > 0 ) {
+				CollisionResult closestCollision = results.getClosestCollision();
+				float distance = closestCollision.getDistance();
+				Vector3f impactPointW = closestCollision.getContactPoint();
+				Vector3f impactPoint = node.worldToLocal(closestCollision.getContactPoint(), null);
+				
+				String impactSpatialName = closestCollision.getGeometry().getName();
+				System.out.println("[rayCaster]    impactSpatialName " + impactSpatialName + "    dist: " + distance );
+				System.out.println("[rayCaster]    impactPointWorld " + impactPointW + "    impactPointLocal: " + impactPoint );			
+				System.out.println("[rayCaster]    colNormal " + closestCollision.getContactNormal() + "    toLoc: " + node.worldToLocal(closestCollision.getContactNormal(), null) + "   length: " +closestCollision.getContactNormal().length());
+				
+				//<Node>
+				// If too close to impact, disregard collision.
+
+				// Debugging visuals
+				node.attachChild( debugMark1 );
+				debugMark1.setLocalTranslation( impactPoint );
+				node.attachChild( debugArrow1 );
+				debugArrow1.setLocalTranslation( impactPoint );
+				((Arrow)debugArrow1.getMesh()).setArrowExtent( closestCollision.getContactNormal() );
+				
+				Vector3f newBloxLoc = new Vector3f( impactPoint );
+				newBloxLoc.addLocal( closestCollision.getContactNormal().mult( unitSize / 2 ) );
+
+				node.attachChild( debugMark2 );
+				debugMark2.setLocalTranslation(newBloxLoc);
+				
+				newBloxLoc = snapToGrid(newBloxLoc);
+				
+				Blox newBlox = new Blox( "GrownBlox", newBloxLoc, assetManager);
+				newBlox.setLocalRotation( node.getLocalRotation() );				
+				
+				System.out.println("newBloxLoc: " + newBloxLoc + "    toLC: " + node.worldToLocal(newBloxLoc, null));
+
+				node.attachChild( newBlox );
+				
+				
+				
+			} else {
+				rootNode.detachChild(debugMark1);
+				rootNode.detachChild(debugMark2);
+				rootNode.detachChild(debugMark3);
+				rootNode.detachChild(debugArrow1);
+				rootNode.detachChild(debugArrow2);
+				rootNode.detachChild(debugArrow3);
+				rootNode.detachChild(debugArrow4);
+			}
+		}
+	}
 
 	public void plasmaBomb() {
 		//shootingChannel.setAnim("Dodge", 0.1f);
@@ -868,45 +945,21 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 	private PhysicsSpace getPhysicsSpace() {
 		return bulletAppState.getPhysicsSpace();
 	}
-	
-	private Vector3f snapToVisualGrid( Vector3f v ) {
-		v.setX( (float) (Math.floor(v.getX() * 100) / 100) );
-		v.setY( (float) (Math.floor(v.getY() * 100) / 100) );
-		v.setZ( (float) (Math.floor(v.getZ() * 100) / 100) );
+		
+	private Vector3f snapToGrid( Vector3f v ) {
+		float stepsize = unitSize / 2;
+		System.out.println(v.x + " -> " + Math.round(( v.x * 20 + stepsize) / 20 ) );
+	    System.out.println(v.y + " -> " + Math.round(( v.y * 20 + stepsize) / 20 ) );
+		System.out.println(v.z + " -> " + Math.round(( v.z * 20 + stepsize) / 20 ) );
+		
+		v.x = Math.round(( v.x * 20 + stepsize) / 20 );
+		v.y = Math.round(( v.y * 20 + stepsize) / 20 );
+		v.z = Math.round(( v.z * 20 + stepsize) / 20 );
+		
 		return v;
 	}
 	
-	private Vector3f snapToConstructionGrid( Vector3f gridPoint, Vector3f v ) {
-		Float diffX = unitSize % v.getX(); //  gridPoint.getX();
-		Float diffY = unitSize % v.getY();// - gridPoint.getY();
-		Float diffZ = unitSize % v.getZ();// - gridPoint.getZ();
-		System.out.println("[snap] diffX: " + diffX );
-		System.out.println("[snap] diffY: " + diffY );
-		System.out.println("[snap] diffZ: " + diffZ );
-		
-		//<Node>
-		float halfSize = unitSize / 2;
-		if ( diffX > halfSize ) {	v.setX( v.x - diffX ); }
-		else { v.setX( v.x + diffX ); }
-		if ( diffY > halfSize ) {	v.setY( v.y - diffY ); }
-		else { v.setY( v.y + diffY ); }
-		if ( diffZ > halfSize ) {	v.setZ( v.z - diffZ ); }
-		else { v.setZ( v.z + diffZ ); }
-		return v;
-	}
-	
-	private void testSnaps() {
-		Vector3f v1 = new Vector3f(1.81f, 19.49799f, 22.10006f);
 
-		Vector3f origin = new Vector3f( 10.01f, 10.02f, 0.03f );
-		System.out.println( "constGrid: " + origin );
-		System.out.println( "v1:        " + snapToVisualGrid( v1 ) );
-
-		snapToConstructionGrid( origin, v1 );
-		System.out.println( "v1 adj:    " + v1 );
-		System.out.println( "expect:    (2.01, 19.02, 22.03)" );
-		
-	}
 	
 
 }

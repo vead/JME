@@ -12,23 +12,23 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
 
 public class Blox extends Geometry {
+	private Vector3f localCoordTranslation;
 		
-	public Blox(String name, AssetManager am) {
+	public Blox(String name, Vector3f location, AssetManager am) {
 		super();
 		float size = AwesomeSpaceGame.unitSize;
 	    /** A cube with base color "leaking" through a partially transparent texture */
-	    Box box = new Box( Vector3f.ZERO, size/2, size/2, size/2 );
+		Box box;
+		if ( location == null )
+			box = new Box( Vector3f.ZERO, size/2, size/2, size/2 );
+		else
+			box = new Box( location, size/2, size/2, size/2 );
+			
 	    setName( name );
 	    setMesh( box );
 
 		//addControl(new RigidBodyControl(0f));
-	    
-	    //Material boxMat = new Material(am, "Common/MatDefs/Misc/Unshaded.j3md");
-	    //boxMat.setTexture("ColorMap", am.loadTexture("Textures/Terrain/Rock2/rock.jpg"));
-	    //boxMat.setColor("Color", new ColorRGBA(0.4f,1f,0.4f, 0.8f)); // green
-	    //boxMat.getAdditionalRenderState().setBlendMode(BlendMode.Alpha); // activate transparency
-	    
-	    
+	    	    
         Material boxMat = new Material(am, "Common/MatDefs/Misc/Unshaded.j3md");
         boxMat.setColor("Color", new ColorRGBA(0.6f, 1, 0.6f, 0.5f));
         boxMat.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
@@ -39,6 +39,14 @@ public class Blox extends Geometry {
 		
 	}
 	
+	public Vector3f getLocalCoordTranslation() {
+		return localCoordTranslation;
+	}
+
+	public void setLocalCoordTranslation(Vector3f localCoordTranslation) {
+		this.localCoordTranslation = localCoordTranslation;
+	}
+
 	public Vector3f neighborBloxLocByDir( ) {
 		/*
 		switch( dir ) {
