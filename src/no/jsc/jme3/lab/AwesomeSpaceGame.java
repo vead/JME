@@ -106,10 +106,12 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 	Geometry debugMark1;
 	Geometry debugMark2;
 	Geometry debugMark3;
+	Geometry debugAxisX;
+	Geometry debugAxisY;
+	Geometry debugAxisZ;
 	Geometry debugArrow1;
 	Geometry debugArrow2;
 	Geometry debugArrow3;
-	Geometry debugArrow4;
 	Geometry debugGrid;
 
 	//HUD
@@ -133,7 +135,8 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 	@Override
 	public void simpleInitApp() {
-		Logger.getLogger("com.jme").setLevel(Level.OFF);
+//		Logger.getLogger("com.jme").setLevel(Level.OFF);
+		Logger.getLogger("").setLevel(Level.SEVERE);
 		bulletAppState = new BulletAppState();
 		bulletAppState.setThreadingType(BulletAppState.ThreadingType.PARALLEL);
 
@@ -229,38 +232,60 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 	/** A red ball that marks the last spot that was "hit" by the "shot". */
 	protected void prepareDebugVisuals() {
-		Material debugMarkMat1 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-		debugMarkMat1.setColor("Color", ColorRGBA.Red);
-		Material debugMarkMat2 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-		debugMarkMat2.setColor("Color", ColorRGBA.White);
+		Material debugMat1 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+		debugMat1.setColor("Color", ColorRGBA.Red);
+		Material debugMat2 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+		debugMat2.setColor("Color", ColorRGBA.Green);
+		Material debugMat3 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+		debugMat3.setColor("Color", ColorRGBA.Blue);
+		Material debugMat4 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+		debugMat4.setColor("Color", ColorRGBA.White);
 		
 		Sphere sphere1 = new Sphere(6, 6, 0.04f);
 		debugMark1 = new Geometry("debugMark1", sphere1);
-		debugMark1.setMaterial(debugMarkMat1);
+		debugMark1.setMaterial(debugMat1);
 		
 		Sphere sphere2 = new Sphere(6, 6, 0.04f);
 		debugMark2 = new Geometry("debugMark2", sphere2);
-		debugMark2.setMaterial(debugMarkMat1);
+		debugMark2.setMaterial(debugMat2);
 		
 		Sphere sphere3 = new Sphere(6, 6, 0.04f);
 		debugMark3 = new Geometry("debugMark3", sphere3);
-		debugMark3.setMaterial(debugMarkMat2);
-
-		Material debugArrowMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-		debugArrowMat.setColor("Color", ColorRGBA.Blue);
+		debugMark3.setMaterial(debugMat3);
 		
+		Arrow axisX = new Arrow(Vector3f.ZERO);
+		axisX.setArrowExtent(Vector3f.UNIT_X);
+		debugAxisX = new Geometry("ThisWay!", axisX);
+		debugAxisX.setMaterial(debugMat1);
+		Arrow axisY = new Arrow(Vector3f.ZERO);
+		axisY.setArrowExtent(Vector3f.UNIT_Y);
+		debugAxisY = new Geometry("ThisWay!", axisY);
+		debugAxisY.setMaterial(debugMat3);
+		Arrow axisZ = new Arrow(Vector3f.ZERO);
+		axisZ.setArrowExtent(Vector3f.UNIT_Z);
+		debugAxisZ = new Geometry("ThisWay!", axisZ);
+		debugAxisZ.setMaterial(debugMat2);
+				
 		Arrow arrow1 = new Arrow(Vector3f.ZERO);
 		debugArrow1 = new Geometry("ThisWay!", arrow1);
-		debugArrow1.setMaterial(debugArrowMat);
+		debugArrow1.setMaterial(debugMat2);
 		Arrow arrow2 = new Arrow(Vector3f.ZERO);
 		debugArrow2 = new Geometry("ThisWay!", arrow2);
-		debugArrow2.setMaterial(debugArrowMat);
+		debugArrow2.setMaterial(debugMat1);
 		Arrow arrow3 = new Arrow(Vector3f.ZERO);
 		debugArrow3 = new Geometry("ThisWay!", arrow3);
-		debugArrow3.setMaterial(debugArrowMat);
-		Arrow arrow4 = new Arrow(Vector3f.ZERO);
-		debugArrow4 = new Geometry("ThisWay!", arrow4);
-		debugArrow4.setMaterial(debugArrowMat);
+		debugArrow3.setMaterial(debugMat3);
+		Arrow originY = new Arrow(Vector3f.ZERO);
+		Geometry originYgeo = new Geometry("ThisWay!", originY);
+		originYgeo.setMaterial(debugMat4);
+		
+		originY.setLineWidth(3);
+		originY.setArrowExtent(Vector3f.UNIT_Y);
+		
+		originYgeo.setLocalTranslation(Vector3f.ZERO);
+		originYgeo.setLocalScale(40);
+		
+		rootNode.attachChild( originYgeo );
 	}
 
 	private void createHud() {
@@ -688,16 +713,26 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 	public void makeMasterBlox() {
 		Vector3f inFront = characterControl.getPhysicsLocation();
-		Blox blox = new Blox("MasterBlox", assetManager);
-		blox.setLocalRotation( cam.getRotation() );
-		blox.setLocalTranslation( inFront.add( cam.getDirection().normalize().mult(3f)) );
-		Node node = new Node( "MasterBlox" );
-		node.attachChild( blox );
-		constructionNodes.add( node );
-		rootNode.attachChild( node );
+		inFront.addLocal( cam.getDirection().normalize().mult(3f) );
+
+		Node masterNode = new Node( "MasterNode" );
+		masterNode.setLocalRotation( cam.getRotation() );
+		masterNode.setLocalTranslation( inFront );
 		
-		System.out.println("[makeMasterBlox]    loc: " + blox.getLocalTranslation() + "    rot: " + blox.getLocalRotation());
+		Blox blox = new Blox("MasterBlox", assetManager );
+		masterNode.attachChild( blox );
+
+		constructionNodes.add( masterNode );
+		rootNode.attachChild( masterNode );
+
+		System.out.println("[makeMasterBlox]    nodeRot: " + masterNode.getLocalRotation() + "    nodeRotW: " + masterNode.getWorldRotation() );
+		System.out.println("[makeMasterBlox]    bloxRot: " + blox.getLocalRotation() + "    bloxRotW: " + blox.getWorldRotation() );
+		System.out.println("[makeMasterBlox]    nodeLoc: " + masterNode.getLocalTranslation() + "    nodeLocW: " + masterNode.getWorldTranslation() );
+		System.out.println("[makeMasterBlox]    bloxLoc: " + blox.getLocalTranslation() + "    nodeLocW: " + blox.getWorldTranslation() );
 		
+		masterNode.attachChild( debugAxisX );
+		masterNode.attachChild( debugAxisY );
+		masterNode.attachChild( debugAxisZ );
 		
 	}
 
@@ -717,78 +752,36 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		for (Node node : constructionNodes) {
 			node.collideWith(ray, results);
 			if ( results.size() > 0 ) {
-				CollisionResult closestCollision = results.getClosestCollision();
-				Triangle impactedTriangle = closestCollision.getTriangle(null);
+ 				CollisionResult closestCollision = results.getClosestCollision();
 				float dist = closestCollision.getDistance();
-				Vector3f pt = closestCollision.getContactPoint();
+
+				Vector3f impactW = closestCollision.getContactPoint();
+				Vector3f impact = node.worldToLocal( impactW, null);
+				Geometry impactGeo = closestCollision.getGeometry();
 				
-				String impactedSpatial = closestCollision.getGeometry().getName();
-				System.out.println("[rayCaster]    impact " + impactedSpatial + " at " + pt + "    dist: " + dist );
-				System.out.println("[rayCaster]    colNormal " + closestCollision.getContactNormal() + "   length: " +closestCollision.getContactNormal().length() );
+				System.out.println("[rayCaster]    impactGeo.name " + impactGeo.getName() + "   dist: " + dist );
+				System.out.println("[rayCaster]    impact " + impact + "   impactW: " + impactW ); 
+				System.out.println("[rayCaster]    normalLocW: " + closestCollision.getContactNormal() );
 
 				//<Node>
 				// If too close to impact, disregard collision.
 
 				// Debugging visuals
-				debugMark1.setLocalTranslation(pt);
-				rootNode.attachChild(debugMark1);
+				debugMark1.setLocalTranslation(impact);
+				node.attachChild(debugMark1);
 
-				debugArrow1.setLocalTranslation( pt );
+				debugArrow1.setLocalTranslation( impactW );
 				((Arrow)debugArrow1.getMesh()).setArrowExtent( closestCollision.getContactNormal() );
 				rootNode.attachChild(debugArrow1);
 
-				System.out.println("debugArrow1, locTrans: " + debugArrow1.getLocalTranslation() + "   worldTrans: " + debugArrow1.getWorldTranslation() );
-
-				Vector3f newBloxLoc = new Vector3f( pt.add( closestCollision.getContactNormal().mult(0.5f) ));
-
-
-				Blox impactedBlox = ((Blox)closestCollision.getGeometry());
-				Vector3f impactedBloxLoc = impactedBlox.getLocalTranslation();
-				newBloxLoc = impactedBloxLoc.add(closestCollision.getContactNormal());
-				Blox newBlox = new Blox( "GrownBlox", assetManager);
-				newBlox.setLocalRotation( impactedBlox.getLocalRotation() );
-				newBlox.setLocalTranslation( newBloxLoc );
-				node.attachChild( newBlox );
-				System.out.println("newBloxLoc: " + newBloxLoc + "    rot: " + newBlox.getLocalRotation());
+				Vector3f newBloxLoc = new Vector3f( impactW );
+				newBloxLoc.addLocal( closestCollision.getContactNormal().mult(0.5f) );
+				node.worldToLocal(newBloxLoc, newBloxLoc);
+				newBloxLoc = snapToGrid( newBloxLoc );
+				
 				debugMark2.setLocalTranslation(newBloxLoc);
-				rootNode.attachChild(debugMark2);
-				/*
-				Blox masterBlox = (Blox)node.getChild("MasterBlox");
-				Vector3f masterBloxLoc = masterBlox.getLocalTranslation();
-				
-				System.out.println("masterBlox: " + masterBloxLoc );
-				System.out.println("newBloxLoc: " + newBloxLoc );
-				
-				Float modX = newBloxLoc.x - masterBloxLoc.x;
-				Float modY = newBloxLoc.y - masterBloxLoc.y;
-				Float modZ = newBloxLoc.z - masterBloxLoc.z;
-				
-				System.out.println("mod X: " + modX );
-				System.out.println("mod Y: " + modY );
-				System.out.println("mod Z: " + modZ );
+				node.attachChild(debugMark2);
 
-				if ( !modX.isNaN() )	newBloxLoc.setX( newBloxLoc.x + modX);
-				if ( !modY.isNaN() )	newBloxLoc.setY( newBloxLoc.y + modY);
-				if ( !modZ.isNaN() )	newBloxLoc.setZ( newBloxLoc.z + modZ);
-
-				System.out.println("adjusted newBloxLoc: " + newBloxLoc );
-				
-				debugMark3.setLocalTranslation( newBloxLoc);
-				rootNode.attachChild(debugMark3);
-				
-				*/
-				
-				// Check if surface can be expanded.
-				// Only squares
-				
-				//impactedTriangle
-				//Blox newBlox = new Blox(closestCollision.getContactNormal(), assetManager);
-				//Blox newBlox = new Blox(newBloxLoc, assetManager);
-				//node.attachChild( newBlox );
-				
-				
-				
-				
 			} else {
 				rootNode.detachChild(debugMark1);
 				rootNode.detachChild(debugMark2);
@@ -796,7 +789,6 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				rootNode.detachChild(debugArrow1);
 				rootNode.detachChild(debugArrow2);
 				rootNode.detachChild(debugArrow3);
-				rootNode.detachChild(debugArrow4);
 			}
 			// 4. Print the results
 			/*
@@ -876,33 +868,31 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		return v;
 	}
 	
-	private Vector3f snapToConstructionGrid( Vector3f gridPoint, Vector3f v ) {
-		Float diffX = unitSize % v.getX(); //  gridPoint.getX();
-		Float diffY = unitSize % v.getY();// - gridPoint.getY();
-		Float diffZ = unitSize % v.getZ();// - gridPoint.getZ();
-		System.out.println("[snap] diffX: " + diffX );
-		System.out.println("[snap] diffY: " + diffY );
-		System.out.println("[snap] diffZ: " + diffZ );
+	private Vector3f snapToGrid( Vector3f v ) {
+		Vector3f r = new Vector3f( v );
+		float stepX = unitSize / 2, stepY = unitSize / 2, stepZ = unitSize / 2;
 		
-		//<Node>
-		float halfSize = unitSize / 2;
-		if ( diffX > halfSize ) {	v.setX( v.x - diffX ); }
-		else { v.setX( v.x + diffX ); }
-		if ( diffY > halfSize ) {	v.setY( v.y - diffY ); }
-		else { v.setY( v.y + diffY ); }
-		if ( diffZ > halfSize ) {	v.setZ( v.z - diffZ ); }
-		else { v.setZ( v.z + diffZ ); }
+		if ( v.x < 0.0000f )	stepX = -stepX;
+		if ( v.y < 0.0000f )	stepY = -stepY;
+		if ( v.z < 0.0000f )	stepZ = -stepZ;
+		
+		v.x = ((int)(v.x + stepX) * 10) / 10;
+		v.y = ((int)(v.y + stepY) * 10) / 10;
+		v.z = ((int)(v.z + stepZ) * 10) / 10;
+		
+		System.out.println("[snapToGrid] x: " + r.x + " -> " + v.x );
+		System.out.println("[snapToGrid] y: " + r.y + " -> " + v.y );
+		System.out.println("[snapToGrid] z: " + r.z + " -> " + v.z );
+		
 		return v;
 	}
 	
 	private void testSnaps() {
 		Vector3f v1 = new Vector3f(1.81f, 19.49799f, 22.10006f);
 
-		Vector3f origin = new Vector3f( 10.01f, 10.02f, 0.03f );
-		System.out.println( "constGrid: " + origin );
 		System.out.println( "v1:        " + snapToVisualGrid( v1 ) );
 
-		snapToConstructionGrid( origin, v1 );
+//		snapToConstructionGrid( v1 );
 		System.out.println( "v1 adj:    " + v1 );
 		System.out.println( "expect:    (2.01, 19.02, 22.03)" );
 		
