@@ -17,6 +17,7 @@ import com.jme3.scene.shape.Box;
 public class BloxNode extends Node {
 	private AssetManager am;
 	private Box box;
+	private Geometry boxGeo;
 	private float size = AwesomeSpaceGame.unitSize;
 	
 	public BloxNode() {
@@ -29,7 +30,7 @@ public class BloxNode extends Node {
 		this.setName(name+"BloxNode");
 		
 		box = new Box( Vector3f.ZERO, size/2, size/2, size/2 );
-		Geometry boxGeo = new Geometry(name+"Geo", box);
+		boxGeo = new Geometry(name+"Geo", box);
 	    	    	    
         Material boxMat = new Material(am, "Common/MatDefs/Misc/Unshaded.j3md");
         boxMat.setColor("Color", new ColorRGBA(0.6f, 0.6f, 1.0f, 0.5f));
@@ -49,6 +50,14 @@ public class BloxNode extends Node {
 	
 	public void materialize() {
 		
+	}
+
+	public Geometry getBoxGeo() {
+		return boxGeo;
+	}
+
+	public void setBoxGeo(Geometry boxGeo) {
+		this.boxGeo = boxGeo;
 	}
 	
 	

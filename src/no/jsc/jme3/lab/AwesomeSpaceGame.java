@@ -60,6 +60,7 @@ import java.util.logging.Logger;
 import no.jsc.jme3.lab.control.*;
 import no.jsc.jme3.lab.domain.Item;
 import no.jsc.jme3.lab.domain.Player;
+import no.jsc.jme3.lab.entity.BloxNode;
 import no.jsc.jme3.lab.geom.Blox;
 import jme3test.bullet.BombControl;
 
@@ -715,25 +716,25 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		Vector3f inFront = characterControl.getPhysicsLocation();
 		inFront.addLocal( cam.getDirection().normalize().mult(3f) );
 
-		Node masterNode = new Node( "MasterNode" );
+		BloxNode masterNode = new BloxNode( "MasterBloxNode", assetManager );
 		masterNode.setLocalRotation( cam.getRotation() );
 		masterNode.setLocalTranslation( inFront );
+		masterNode.getBoxGeo().getMaterial().setColor("Color", new ColorRGBA(0.6f, 1.0f, 0.6f, 0.5f));
 		
-		Blox blox = new Blox("MasterBlox", assetManager );
-		masterNode.attachChild( blox );
+		//Blox blox = new Blox("MasterBlox", assetManager );
+		//masterNode.attachChild( blox );
 
 		constructionNodes.add( masterNode );
 		rootNode.attachChild( masterNode );
 
 		System.out.println("[makeMasterBlox]    nodeRot: " + masterNode.getLocalRotation() + "    nodeRotW: " + masterNode.getWorldRotation() );
-		System.out.println("[makeMasterBlox]    bloxRot: " + blox.getLocalRotation() + "    bloxRotW: " + blox.getWorldRotation() );
+		System.out.println("[makeMasterBlox]    bloxRot: " + masterNode.getBoxGeo().getLocalRotation() + "    bloxRotW: " + masterNode.getBoxGeo().getWorldRotation() );
 		System.out.println("[makeMasterBlox]    nodeLoc: " + masterNode.getLocalTranslation() + "    nodeLocW: " + masterNode.getWorldTranslation() );
-		System.out.println("[makeMasterBlox]    bloxLoc: " + blox.getLocalTranslation() + "    nodeLocW: " + blox.getWorldTranslation() );
+		System.out.println("[makeMasterBlox]    bloxLoc: " + masterNode.getBoxGeo().getLocalTranslation() + "    nodeLocW: " + masterNode.getBoxGeo().getWorldTranslation() );
 		
 		masterNode.attachChild( debugAxisX );
 		masterNode.attachChild( debugAxisY );
 		masterNode.attachChild( debugAxisZ );
-		
 	}
 
 	public void rayCaster() {
@@ -777,7 +778,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				node.worldToLocal(newBloxLoc, newBloxLoc);
 				newBloxLoc = snapToGrid( newBloxLoc );
 				
-				Blox newBlox = new Blox("ExpBlox", assetManager);
+				BloxNode newBlox = new BloxNode("ExpBlox", assetManager);
 				newBlox.setLocalTranslation( newBloxLoc );
 				node.attachChild( newBlox );
 				
