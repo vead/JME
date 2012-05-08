@@ -738,7 +738,8 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 	public void rayCaster() {
 		// 1. Reset results list.
-		CollisionResults results = new CollisionResults();
+		CollisionResults rayPicker = new CollisionResults();
+		CollisionResults placementCollisionRes = new CollisionResults();
 		// 2. Aim the ray from cam loc to cam direction.
 		Ray ray = new Ray(cam.getLocation(), cam.getDirection());
 		ray.setLimit(14f);
@@ -750,9 +751,9 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 		// TODO Refactor to disregard on Player-Newblox collision.
 		for (Node node : constructionNodes) {
-			node.collideWith(ray, results);
-			if ( results.size() > 0 ) {
- 				CollisionResult closestCollision = results.getClosestCollision();
+			node.collideWith(ray, rayPicker);
+			if ( rayPicker.size() > 0 ) {
+ 				CollisionResult closestCollision = rayPicker.getClosestCollision();
 				float dist = closestCollision.getDistance();
 
 				Vector3f impactW = closestCollision.getContactPoint();
@@ -762,9 +763,6 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				System.out.println("[rayCaster]    impactGeo.name " + impactGeo.getName() + "   dist: " + dist );
 				System.out.println("[rayCaster]    impact " + impact + "   impactW: " + impactW ); 
 				System.out.println("[rayCaster]    normalLocW: " + closestCollision.getContactNormal() );
-
-				//<Node>
-				// If too close to impact, disregard collision.
 
 				// Debugging visuals
 				debugMark1.setLocalTranslation(impact);
@@ -778,6 +776,18 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				newBloxLoc.addLocal( closestCollision.getContactNormal().mult(0.5f) );
 				node.worldToLocal(newBloxLoc, newBloxLoc);
 				newBloxLoc = snapToGrid( newBloxLoc );
+				
+				Blox newBlox = new Blox("ExpBlox", assetManager);
+				newBlox.setLocalTranslation( newBloxLoc );
+				node.attachChild( newBlox );
+				
+				// Not a spatial (collidable)... 
+//				newBlox.collideWith(rootNode, placementCollisionRes);
+
+				// Checking entire world for placement collison? rly.. ? oh ok..
+				for (CollisionResult collision : placementCollisionRes) {
+					System.out.println("ILLEGAL PLACEMENT! " + collision.toString());
+				}
 				
 				debugMark2.setLocalTranslation(newBloxLoc);
 				node.attachChild(debugMark2);

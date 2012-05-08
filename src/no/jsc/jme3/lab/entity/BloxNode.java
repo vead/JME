@@ -32,7 +32,7 @@ public class BloxNode extends Node {
 		Geometry boxGeo = new Geometry(name+"Geo", box);
 	    	    	    
         Material boxMat = new Material(am, "Common/MatDefs/Misc/Unshaded.j3md");
-        boxMat.setColor("Color", new ColorRGBA(0.6f, 1, 0.6f, 0.5f));
+        boxMat.setColor("Color", new ColorRGBA(0.6f, 0.6f, 1.0f, 0.5f));
         boxMat.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
         //boxMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
         
@@ -44,6 +44,10 @@ public class BloxNode extends Node {
 //        control.setFriction(0.5f);
 //        control.setPhysicsLocation(location);
 //        this.addControl(control);
+		
+	}
+	
+	public void materialize() {
 		
 	}
 	

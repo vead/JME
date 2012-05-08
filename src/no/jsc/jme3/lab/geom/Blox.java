@@ -3,6 +3,7 @@ package no.jsc.jme3.lab.geom;
 import no.jsc.jme3.lab.AwesomeSpaceGame;
 import com.jme3.asset.AssetManager;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.collision.Collidable;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
@@ -11,7 +12,7 @@ import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
 
-public class Blox extends Geometry {
+public class Blox extends Geometry implements Collidable {
 		
 	public Blox(String name,  AssetManager am) {
 		super();
@@ -33,6 +34,8 @@ public class Blox extends Geometry {
         
         setMaterial(boxMat);
         setQueueBucket(Bucket.Translucent);
+        
+        
 		
 	}
 	
