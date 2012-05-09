@@ -716,10 +716,11 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		Vector3f inFront = characterControl.getPhysicsLocation();
 		inFront.addLocal( cam.getDirection().normalize().mult(3f) );
 
-		BloxNode masterNode = new BloxNode( "MasterBloxNode", assetManager );
+		BloxNode masterNode = new BloxNode( "MasterBloxNode", getPhysicsSpace(), assetManager );
 		masterNode.setLocalRotation( cam.getRotation() );
 		masterNode.setLocalTranslation( inFront );
 		masterNode.getBoxGeo().getMaterial().setColor("Color", new ColorRGBA(0.6f, 1.0f, 0.6f, 0.5f));
+		masterNode.materialize();
 		
 		//Blox blox = new Blox("MasterBlox", assetManager );
 		//masterNode.attachChild( blox );
@@ -731,7 +732,8 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		System.out.println("[makeMasterBlox]    bloxRot: " + masterNode.getBoxGeo().getLocalRotation() + "    bloxRotW: " + masterNode.getBoxGeo().getWorldRotation() );
 		System.out.println("[makeMasterBlox]    nodeLoc: " + masterNode.getLocalTranslation() + "    nodeLocW: " + masterNode.getWorldTranslation() );
 		System.out.println("[makeMasterBlox]    bloxLoc: " + masterNode.getBoxGeo().getLocalTranslation() + "    nodeLocW: " + masterNode.getBoxGeo().getWorldTranslation() );
-		
+
+		System.out.println("[makeMasterBlox]    physLoc: " +masterNode.getControl(RigidBodyControl.class).getPhysicsLocation() );
 		masterNode.attachChild( debugAxisX );
 		masterNode.attachChild( debugAxisY );
 		masterNode.attachChild( debugAxisZ );
@@ -758,7 +760,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				float dist = closestCollision.getDistance();
 
 				Vector3f impactW = closestCollision.getContactPoint();
-				Vector3f impact = node.worldToLocal( impactW, null);
+				Vector3f impact = node.worldToLocal( impactW, null );
 				Geometry impactGeo = closestCollision.getGeometry();
 				
 				System.out.println("[rayCaster]    impactGeo.name " + impactGeo.getName() + "   dist: " + dist );
@@ -778,9 +780,10 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				node.worldToLocal(newBloxLoc, newBloxLoc);
 				newBloxLoc = snapToGrid( newBloxLoc );
 				
-				BloxNode newBlox = new BloxNode("ExpBlox", assetManager);
+				BloxNode newBlox = new BloxNode("ExpBlox", getPhysicsSpace(), assetManager);
 				newBlox.setLocalTranslation( newBloxLoc );
 				node.attachChild( newBlox );
+				newBlox.materialize();
 				
 				// Not a spatial (collidable)... 
 //				newBlox.collideWith(rootNode, placementCollisionRes);
@@ -792,6 +795,8 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				
 				debugMark2.setLocalTranslation(newBloxLoc);
 				node.attachChild(debugMark2);
+				
+				break;
 
 			} else {
 				rootNode.detachChild(debugMark1);
@@ -801,56 +806,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 				rootNode.detachChild(debugArrow2);
 				rootNode.detachChild(debugArrow3);
 			}
-			// 4. Print the results
-			/*
-	        Helper method:
-	        	Colored marks / crosses / lines
-	        	impactPoint : Red mark
-	        	normalExtruded : Blue thin line
-	        	normalApproxified : White thick line
-	        	newLoc : TinyBox
-
-	        	Find Collision on Ray -> (TriMesh)Blox
-	        	Find Triangle t
-	        	Is Expandable surface?
-	        	??
-	        	Vector normal = t.getNormal();
-	        	Vector approxLoc = normal.length + unitSize / 2;
-	        	Vector Loc.Xa = roundUpToUnitsize( approxLoc.x / mbv.x )
-	        	Vector Loc.Xb = roundDownToUnitsize( approxLoc.x / mbv.x )
-	        	…
-	        	If
-	        	T.normal / sizeunit -> Round to local
-	        	MasterBloxV mbv
-	        	Create new Geometry
-	        	Merge newGeo and TriMesh
-	        	Delete newGeo ?
-
-
-	        System.out.println("----- Collisions? " + results.size() + "-----");
-	        for (int i = 0; i < results.size(); i++) {
-	          // For each hit, we know distance, impact point, name of geometry.
-	        	results.getCollision(i).getTriangle(null)
-	          float dist = results.getCollision(i).getDistance();
-	          Vector3f pt = results.getCollision(i).getContactPoint();
-	          String hit = results.getCollision(i).getGeometry().getName();
-	          System.out.println("* Collision #" + i);
-	          System.out.println("  You shot " + hit + " at " + pt + ", " + dist + " wu away.");
-	        }
-	        // 5. Use the results (we mark the hit object)
-	        if (results.size() > 0) {
-	        	System.out.println("HIT NODE: " + node.toString() );
-	          // The closest collision point is what was truly hit:
-	          // CollisionResult closest = results.getClosestCollision();
-	          // Let's interact - we mark the hit with a red dot.
-	        } else {
-	          // No hits? Then remove the red mark.
-	        	System.out.println("LOLOL Missed node! " + node.toString() );
-	        }
-			 */
 		}
-
- 
 	}
 
 	public void plasmaBomb() {

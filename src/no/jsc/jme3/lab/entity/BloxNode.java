@@ -3,6 +3,7 @@ package no.jsc.jme3.lab.entity;
 import no.jsc.jme3.lab.AwesomeSpaceGame;
 
 import com.jme3.asset.AssetManager;
+import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.material.Material;
@@ -15,6 +16,7 @@ import com.jme3.scene.Node;
 import com.jme3.scene.shape.Box;
 
 public class BloxNode extends Node {
+	private PhysicsSpace ps;
 	private AssetManager am;
 	private Box box;
 	private Geometry boxGeo;
@@ -24,8 +26,9 @@ public class BloxNode extends Node {
 		super();
 	}
 	
-	public BloxNode(String name, AssetManager am) {
+	public BloxNode(String name, PhysicsSpace ps, AssetManager am) {
 		super();
+		this.ps = ps;
 		this.am = am;
 		this.setName(name+"BloxNode");
 		
@@ -40,16 +43,15 @@ public class BloxNode extends Node {
         boxGeo.setMaterial(boxMat);
         boxGeo.setQueueBucket(Bucket.Translucent);
         this.attachChild( boxGeo );
-        
-//        RigidBodyControl control = new RigidBodyControl(new BoxCollisionShape(new Vector3f(box.getXExtent(), box.getYExtent(), box.getZExtent())), 0f);
-//        control.setFriction(0.5f);
-//        control.setPhysicsLocation(location);
-//        this.addControl(control);
 		
 	}
 	
 	public void materialize() {
-		
+		RigidBodyControl control = new RigidBodyControl(new BoxCollisionShape(new Vector3f(box.getXExtent(), box.getYExtent(), box.getZExtent())), 0f);
+        control.setFriction(0.5f);
+        control.setPhysicsLocation( this.getWorldTranslation() );
+        this.addControl(control);
+        ps.add( control );
 	}
 
 	public Geometry getBoxGeo() {
