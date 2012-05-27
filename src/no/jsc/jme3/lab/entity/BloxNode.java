@@ -6,6 +6,7 @@ import com.jme3.asset.AssetManager;
 import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.collision.Collidable;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
@@ -27,7 +28,7 @@ public class BloxNode extends Node {
 	}
 	
 	public BloxNode(String name, PhysicsSpace ps, AssetManager am) {
-		super();
+		super(name);
 		this.ps = ps;
 		this.am = am;
 		this.setName(name+"BloxNode");
@@ -61,6 +62,9 @@ public class BloxNode extends Node {
 	public void setBoxGeo(Geometry boxGeo) {
 		this.boxGeo = boxGeo;
 	}
+
+	
+	
 	
 	
 }

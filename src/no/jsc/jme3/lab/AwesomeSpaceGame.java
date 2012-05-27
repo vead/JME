@@ -3,15 +3,20 @@ package no.jsc.jme3.lab;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.app.SimpleApplication;
 import com.jme3.bounding.BoundingBox;
+import com.jme3.bounding.BoundingSphere;
+import com.jme3.bounding.BoundingVolume;
 import com.jme3.bullet.PhysicsSpace;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.SphereCollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.collision.Collidable;
 import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
+import com.jme3.collision.UnsupportedCollisionException;
 import com.jme3.effect.shapes.EmitterSphereShape;
 import com.jme3.effect.ParticleEmitter;
 import com.jme3.effect.ParticleMesh.Type;
@@ -23,22 +28,29 @@ import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
+import com.jme3.material.RenderState.BlendMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Matrix4f;
+import com.jme3.math.Plane;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Ray;
+import com.jme3.math.Transform;
 import com.jme3.math.Triangle;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
+import com.jme3.math.Plane.Side;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
 import com.jme3.renderer.Camera;
+import com.jme3.renderer.queue.RenderQueue.Bucket;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.debug.Arrow;
+import com.jme3.scene.debug.WireBox;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Sphere.TextureMode;
@@ -50,6 +62,8 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.ui.Picture;
 import com.jme3.util.SkyFactory;
+
+import java.nio.FloatBuffer;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -61,6 +75,8 @@ import no.jsc.jme3.lab.control.*;
 import no.jsc.jme3.lab.domain.Item;
 import no.jsc.jme3.lab.domain.Player;
 import no.jsc.jme3.lab.entity.BloxNode;
+import no.jsc.jme3.lab.entity.FadeInfo;
+import no.jsc.jme3.lab.entity.Spacecraft;
 import no.jsc.jme3.lab.geom.Blox;
 import jme3test.bullet.BombControl;
 
@@ -75,8 +91,13 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 	Player player;
 
 	// Contruction Nodes
-	ArrayList<Node> constructionNodes = new ArrayList<Node>();
+	ArrayList<Node> masterNodeList = new ArrayList<Node>();
 	public static final float unitSize = 1f;
+	private int entitySequence = 0;
+	
+	// Fading geometry
+	ArrayList<FadeInfo> fadeout = new ArrayList<FadeInfo>();
+	
 
 	public static enum Enviroment { SPACEWALK, INTERIOR, SHIP }
 	Enviroment enviroment = Enviroment.INTERIOR;
@@ -256,37 +277,51 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		
 		Arrow axisX = new Arrow(Vector3f.ZERO);
 		axisX.setArrowExtent(Vector3f.UNIT_X);
-		debugAxisX = new Geometry("ThisWay!", axisX);
+		debugAxisX = new Geometry("debugArrowX", axisX);
 		debugAxisX.setMaterial(debugMat1);
 		Arrow axisY = new Arrow(Vector3f.ZERO);
 		axisY.setArrowExtent(Vector3f.UNIT_Y);
-		debugAxisY = new Geometry("ThisWay!", axisY);
+		debugAxisY = new Geometry("debugArrowXY", axisY);
 		debugAxisY.setMaterial(debugMat3);
 		Arrow axisZ = new Arrow(Vector3f.ZERO);
 		axisZ.setArrowExtent(Vector3f.UNIT_Z);
-		debugAxisZ = new Geometry("ThisWay!", axisZ);
+		debugAxisZ = new Geometry("debugArrowZ", axisZ);
 		debugAxisZ.setMaterial(debugMat2);
 				
 		Arrow arrow1 = new Arrow(Vector3f.ZERO);
-		debugArrow1 = new Geometry("ThisWay!", arrow1);
+		debugArrow1 = new Geometry("debugArrow1", arrow1);
 		debugArrow1.setMaterial(debugMat2);
 		Arrow arrow2 = new Arrow(Vector3f.ZERO);
-		debugArrow2 = new Geometry("ThisWay!", arrow2);
+		debugArrow2 = new Geometry("debugArrow2", arrow2);
 		debugArrow2.setMaterial(debugMat1);
 		Arrow arrow3 = new Arrow(Vector3f.ZERO);
-		debugArrow3 = new Geometry("ThisWay!", arrow3);
+		debugArrow3 = new Geometry("debugArrow2", arrow3);
 		debugArrow3.setMaterial(debugMat3);
+
+		Arrow originX = new Arrow(Vector3f.ZERO);
 		Arrow originY = new Arrow(Vector3f.ZERO);
-		Geometry originYgeo = new Geometry("ThisWay!", originY);
-		originYgeo.setMaterial(debugMat4);
-		
+		Arrow originZ = new Arrow(Vector3f.ZERO);
+		Geometry originXgeo = new Geometry("debugArrowOriginX", originX);
+		Geometry originYgeo = new Geometry("debugArrowOriginY", originY);
+		Geometry originZgeo = new Geometry("debugArrowOriginZ", originZ);
+		originXgeo.setMaterial(debugMat1);
+		originYgeo.setMaterial(debugMat3);
+		originZgeo.setMaterial(debugMat2);
+		originX.setLineWidth(3);
 		originY.setLineWidth(3);
+		originZ.setLineWidth(3);
+		originX.setArrowExtent(Vector3f.UNIT_X);
 		originY.setArrowExtent(Vector3f.UNIT_Y);
-		
-		originYgeo.setLocalTranslation(Vector3f.ZERO);
-		originYgeo.setLocalScale(40);
-		
+		originZ.setArrowExtent(Vector3f.UNIT_Z);
+		originXgeo.setLocalScale(140);
+		originYgeo.setLocalScale(140);
+		originZgeo.setLocalScale(140);
+		originXgeo.setLocalTranslation(0.0f, 16.0f, 0.0f);
+		originYgeo.setLocalTranslation(0.0f, 16.0f, 0.0f);
+		originZgeo.setLocalTranslation(0.0f, 16.0f, 0.0f);
+		rootNode.attachChild( originXgeo );
 		rootNode.attachChild( originYgeo );
+		rootNode.attachChild( originZgeo );
 	}
 
 	private void createHud() {
@@ -459,6 +494,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		TerrainLodControl control = new TerrainLodControl(terrain, cameras);
 		terrain.addControl(control);
 		terrain.setMaterial(matRock);
+		terrain.setLocalTranslation(0.0f,-1.0f,0.0f);
 		terrain.setModelBound(new BoundingBox());
 		terrain.updateModelBound();
 		terrain.setLocalScale(new Vector3f(2, 2, 2));
@@ -474,7 +510,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		characterControl = new ForceCharacterControl(capsule, 0.1f);
 		Node characterNode = new Node("CharacterNode");
 		characterNode.addControl(characterControl);
-		characterControl.setPhysicsLocation(new Vector3f(0, 40, 0));
+		characterControl.setPhysicsLocation(new Vector3f(0, 22, 0));
 		System.out.println( flyCam.getRotationSpeed() + "");
 		flyCam.setRotationSpeed(1.8f);
 		characterControl.setForceDamping(0.8f);
@@ -497,7 +533,7 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 
 		updateMovement( tpf );
 		updateHud( tpf );
-
+		updateFadeout();
 	}
 
 	private void updateMovement(float tpf) {
@@ -712,100 +748,347 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		}
 	}
 
+	public Geometry makeBlox(String name) {
+		Box box = new Box( Vector3f.ZERO, unitSize/2, unitSize/2, unitSize/2 );
+		
+		Geometry boxGeo = new Geometry(name, box);
+	    	    	    
+        Material boxMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        boxMat.setColor("Color", new ColorRGBA(0.6f, 0.6f, 1.0f, 0.5f));
+        boxMat.getAdditionalRenderState().setBlendMode(BlendMode.Alpha);
+        //boxMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
+        
+        
+        boxGeo.setMaterial(boxMat);
+        boxGeo.setQueueBucket(Bucket.Translucent);
+     
+        return boxGeo;
+	}
+	private void updateCollisionShape( Geometry geo ) {
+		
+	}
+	
+	public boolean validatePlacement2(Geometry geo) {
+		float margin = 0.75f;
+		ArrayList<Spatial> intersectingSpatials = new ArrayList<Spatial>();
+		Transform originalTransform = geo.getLocalTransform();
+		
+		System.out.println("geo loc: " + geo.getLocalTranslation() );
+		geo.scale( margin );
+		System.out.println("geo loc: " + geo.getLocalTranslation() );
+		
+//		((Box)geo.getMesh()).xExtent = 
+		
+		
+//		tempGeo.setLocalTranslation( geo.getWorldBound().getCenter() );
+//		tempGeo.setLocalRotation( geo.getLocalRotation() );
+//		tempGeo.setLocalTransform( geo.getLocalTransform());
+//		System.out.println("tempGeo: " + tempGeo.getWorldBound() + "\ttempGeo.parent: " + tempGeo.getParent() + "\tgeo:" + geo.getWorldBound());
+		
+		for (Node masterNode : masterNodeList) {
+//			System.out.println("[validatePlacement]\tmasterNodeList; " + masterNode.getName() );
+			
+			for (Spatial s : masterNode.getChildren()) {
+//				System.out.println("[validatePlacement]\t\tspatial; " + s.getName() );
+				if (!s.equals( geo ) && !s.getName().contains("debug")) {
+					if ( s.getWorldBound().intersects( geo.getWorldBound() )) {
+						intersectingSpatials.add( s );
+					} else {
+//						System.out.println("[validatePlacement] valid; " + s.getName() + " and " + geo.getName() );
+//						System.out.println("[validatePlacement] valid; wb1 " + s.getWorldBound() + "\n\t\t\twb2 " + tempGeo.getWorldBound() );
+						
+					}
+				} else {
+//					System.out.println("[validatePlacement]\t\tIGNORED; " + s.getName() );
+
+				}
+			}
+		}
+		
+//		geo.setLocalTransform( originalTransform );
+		
+		if ( !intersectingSpatials.isEmpty() ) {
+			System.out.println("[validatePlacement] INVALID newGeo: " + geo.getName() + ".WB:\t" + geo.getWorldBound() );
+			
+			for (Spatial s : intersectingSpatials) {
+			System.out.println("[validatePlacement]    intersected: " + s.getName() + ".WB:\t" + s.getWorldBound() );
+				
+				if ( s.getClass().equals(Geometry.class) ) {
+					((Geometry)s).getMaterial().setColor("Color", new ColorRGBA( 1.0f, 0.2f, 0.2f, 0.2f));
+				}
+			}
+			return false;
+		}
+		return true;
+	}
+
+	public void updateFadeout() {
+		float steptime = 0.2f;
+		for (FadeInfo fade : fadeout) {
+			// If transparent, increase transparancy
+			if ( fade.getGeo().getMaterial().isTransparent() ) {
+				
+			}
+//			<Node>
+			if ( timer.getTimeInSeconds() > fade.getCreationTime() + fade.getTotalLifetime() ) {
+				fade.getGeo().removeFromParent();
+			}
+				
+			
+		}
+	}
+	
+	public void addFadeout( Spatial s, int lifetime ) {
+		if ( s.getClass().equals(Geometry.class)) {
+			Geometry geo = (Geometry)s;
+			fadeout.add( new FadeInfo( timer.getTimeInSeconds(), 4f, geo) );
+		}
+			
+	}
+	
+	public boolean validatePlacement( Geometry sourceGeo, boolean scale ) {
+		
+		Transform originalTransform = sourceGeo.getLocalTransform();
+
+		ArrayList<Geometry> intersectingGeos = new ArrayList<Geometry>();
+		BoundingBox sourceBb = (BoundingBox)sourceGeo.getModelBound().clone();
+		sourceBb.setCenter( sourceGeo.getLocalTranslation() );
+//		BoundingBox sourceBb = new BoundingBox( (BoundingBox)sourceGeo.getModelBound() );
+		
+//		sourceBb.setCenter( geo.getParent().localToWorld( geo.getLocalTranslation(), null) );
+//		sourceBb.setCenter( geo.getWorldTranslation() );
+//		sourceBb.transform( geo.getWorldTransform() );
+		
+		float margin = 0.95f;
+		sourceBb.setXExtent( sourceBb.getXExtent() * margin );
+		sourceBb.setYExtent( sourceBb.getYExtent() * margin );
+		sourceBb.setZExtent( sourceBb.getZExtent() * margin );
+		WireBox sourceBbWire = new WireBox();
+		sourceBbWire.fromBoundingBox( sourceBb );
+		sourceBbWire.setLineWidth(3f);
+		Geometry sourceBbWireGeo = new Geometry("debugSourceBbWireGeo", sourceBbWire);
+        Material sourceBbWireMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        sourceBbWireMat.setColor("Color", ColorRGBA.Black);
+        sourceBbWireGeo.setMaterial( sourceBbWireMat );
+        sourceBbWireGeo.updateModelBound();
+//	        sourceBbWireGeo.setLocalTranslation( geo.getWorldTranslation() );
+//	        sourceBbWireGeo.setLocalTransform( geo.getWorldTransform() );
+        sourceGeo.getParent().attachChild( sourceBbWireGeo );
+	
+
+//		bb.setCenter( geo.getWorldTranslation() );
+		
+//			System.out.println("[validatePlacement]\tmasterNodeList; " + masterNode.getName() );
+			
+		for (Spatial s : sourceGeo.getParent().getChildren()) {
+//				System.out.println("[validatePlacement]\t\tspatial; " + s.getName() );
+			if (!s.equals( sourceGeo ) && s.getClass().equals(Geometry.class) && !s.getName().contains("debug")) {
+//					if ( geo.getW)
+				Geometry targetGeo = (Geometry)s;
+				BoundingBox targetBb = (BoundingBox)targetGeo.getModelBound();
+				
+				if ( sourceBb.intersects( targetBb ) ) {
+//				if ( sourceGeo.getModelBound().intersects( targetGeo.getModelBound() ) ) {
+					
+					System.out.println("SOURCE WL:\t" + sourceGeo.getModelBound().toString() );
+//						System.out.println("       WT:\t" + sourceBb. );
+					System.out.println("TARGET WL:\t" + targetGeo.getModelBound().toString() );
+//						System.out.println("       WT:\t" + sourceBb. );
+					System.out.println("DIST   WT:\t" + sourceBb.distanceTo( targetBb.getCenter()  ) );
+					
+					WireBox targetWire = new WireBox();
+					targetWire.fromBoundingBox( targetBb );
+					targetWire.setLineWidth(3f);
+					Geometry targetWireGeo = new Geometry("debugIntersectWireGeo", targetWire);
+			        Material targetWireMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+			        targetWireMat.setColor("Color", ColorRGBA.Red);
+			        targetWireGeo.setMaterial( targetWireMat );
+			        targetWireGeo.updateModelBound();
+//				        intersectGeo.getParent().attachChild( intersecWireGeo );
+//				        targetWireGeo.setLocalTranslation( targetGeo.getWorldTranslation() );
+//				        targetWireGeo.setLocalTransform( targetGeo.getWorldTransform() );
+			        sourceGeo.getParent().attachChild( targetWireGeo );
+//				        rootNode.attachChild( intersectGeo )
+					intersectingGeos.add( targetGeo );
+				} else {
+//						System.out.println("[validatePlacement] valid; " + s.getName() + " and " + geo.getName() );
+					System.out.println("[validatePlacement] valid; sourceBb: " + sourceBb.toString() );
+					System.out.println("[validatePlacement] valid; targetBb: " + targetBb.toString() );
+//						.getWorldBound() + "\n\t\t\twb2 " + tempGeo.getWorldBound() );
+					
+				}
+			} else {
+//					System.out.println("[validatePlacement]\t\tIGNORED; " + s.getName() );
+
+			}
+		}
+		
+		
+//		geo.setLocalTransform( originalTransform );
+		
+		if ( !intersectingGeos.isEmpty() ) {
+//			System.out.println("[validatePlacement] INVALID newGeo: " + geo.getName() + ".WB:\t" + sourceBb );
+//			System.out.println("[validatePlacement] \t\t\t WT: " + geo.getWorldTransform() + " WL: " + geo );
+			
+			for (Geometry g : intersectingGeos) {
+//				System.out.println("[validatePlacement]    intersected: " + g.getName() + ".WB:\t" + g.getModelBound() );
+//				g.getMaterial().setColor("Color", new ColorRGBA( 1.0f, 0.2f, 0.2f, 0.2f));
+			}
+			return false;
+		}
+		return true;
+	}
+
 	public void makeMasterBlox() {
 		Vector3f inFront = characterControl.getPhysicsLocation();
 		inFront.addLocal( cam.getDirection().normalize().mult(3f) );
 
-		BloxNode masterNode = new BloxNode( "MasterBloxNode", getPhysicsSpace(), assetManager );
+		Node masterNode = new Node( "MasterNode" + this.entitySequence() );
 		masterNode.setLocalRotation( cam.getRotation() );
 		masterNode.setLocalTranslation( inFront );
-		masterNode.getBoxGeo().getMaterial().setColor("Color", new ColorRGBA(0.6f, 1.0f, 0.6f, 0.5f));
-		masterNode.materialize();
 		
-		//Blox blox = new Blox("MasterBlox", assetManager );
-		//masterNode.attachChild( blox );
+		Geometry masterGeo = makeBlox("MasterGeo" + this.entitySequence() );
+		masterGeo.getMaterial().setColor("Color", new ColorRGBA(0.6f, 1.0f, 0.6f, 0.5f));
+		masterNode.attachChild( masterGeo );
+//		this.materialize( masterGeo );
+		
+		WireBox wBox = new WireBox();
+		wBox.fromBoundingBox( ((BoundingBox)masterGeo.getModelBound()) );
+		Geometry wBoxGeo = new Geometry("debugMasterWire", wBox);
+        Material wBoxMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        wBoxMat.setColor("Color", ColorRGBA.White);
+        wBoxGeo.setMaterial( wBoxMat );
+//        wBoxGeo.scale(1.01f);
+		wBoxGeo.updateModelBound();
+		masterNode.attachChild( wBoxGeo );
+				
+		Spacecraft sc = new Spacecraft("MyFirstSpaceShip!" + masterNode.getName());
+		sc.addPart(masterGeo.getLocalTranslation() , (byte)1);
+		masterNode.setUserData("Spacecraft", sc );
 
-		constructionNodes.add( masterNode );
+
+		
 		rootNode.attachChild( masterNode );
+		masterNodeList.add( masterNode );
+		
+		RigidBodyControl control = new RigidBodyControl(CollisionShapeFactory.createDynamicMeshShape( masterNode ), 0f);
+        control.setFriction(0.5f);
+        control.setPhysicsLocation( masterNode.getWorldTranslation() );
+        masterNode.addControl( control );
+        this.getPhysicsSpace().add( control );
+		
 
 		System.out.println("[makeMasterBlox]    nodeRot: " + masterNode.getLocalRotation() + "    nodeRotW: " + masterNode.getWorldRotation() );
-		System.out.println("[makeMasterBlox]    bloxRot: " + masterNode.getBoxGeo().getLocalRotation() + "    bloxRotW: " + masterNode.getBoxGeo().getWorldRotation() );
+		System.out.println("[makeMasterBlox]    geoRot:  " + masterGeo.getLocalRotation() + "    geoRotW:  " + masterGeo.getWorldRotation() );
 		System.out.println("[makeMasterBlox]    nodeLoc: " + masterNode.getLocalTranslation() + "    nodeLocW: " + masterNode.getWorldTranslation() );
-		System.out.println("[makeMasterBlox]    bloxLoc: " + masterNode.getBoxGeo().getLocalTranslation() + "    nodeLocW: " + masterNode.getBoxGeo().getWorldTranslation() );
+		System.out.println("[makeMasterBlox]    geoLoc:  " + masterGeo.getLocalTranslation() + "    geoLocW:  " +masterGeo.getWorldTranslation() );
 
-		System.out.println("[makeMasterBlox]    physLoc: " +masterNode.getControl(RigidBodyControl.class).getPhysicsLocation() );
 		masterNode.attachChild( debugAxisX );
 		masterNode.attachChild( debugAxisY );
 		masterNode.attachChild( debugAxisZ );
+
 	}
-
-	public void rayCaster() {
-		// 1. Reset results list.
+	
+	public CollisionResult rayPicker() {
+		// Reset results.
 		CollisionResults rayPicker = new CollisionResults();
-		CollisionResults placementCollisionRes = new CollisionResults();
-		// 2. Aim the ray from cam loc to cam direction.
+		CollisionResult closestCollision = null;
+
+		// Aim the ray from cam loc to cam direction.
 		Ray ray = new Ray(cam.getLocation(), cam.getDirection());
+		
+		// Limit ray. Dont want to pick distant geometries.
 		ray.setLimit(14f);
-		// 3. Collect intersections between Ray and Shootables in results list.<Node>
-		//Node node;
-				
-		// rotation/translation in world coordinates will always be around/relative to the origin
-		// and that local means local in relation to its parent node
-
-		// TODO Refactor to disregard on Player-Newblox collision.
-		for (Node node : constructionNodes) {
+		
+		// Check every masterNode.
+		for (Node node : masterNodeList) {
 			node.collideWith(ray, rayPicker);
-			if ( rayPicker.size() > 0 ) {
- 				CollisionResult closestCollision = rayPicker.getClosestCollision();
-				float dist = closestCollision.getDistance();
-
-				Vector3f impactW = closestCollision.getContactPoint();
-				Vector3f impact = node.worldToLocal( impactW, null );
-				Geometry impactGeo = closestCollision.getGeometry();
-				
-				System.out.println("[rayCaster]    impactGeo.name " + impactGeo.getName() + "   dist: " + dist );
-				System.out.println("[rayCaster]    impact " + impact + "   impactW: " + impactW ); 
-				System.out.println("[rayCaster]    normalLocW: " + closestCollision.getContactNormal() );
-
-				// Debugging visuals
-				debugMark1.setLocalTranslation(impact);
-				node.attachChild(debugMark1);
-
-				debugArrow1.setLocalTranslation( impactW );
-				((Arrow)debugArrow1.getMesh()).setArrowExtent( closestCollision.getContactNormal() );
-				rootNode.attachChild(debugArrow1);
-
-				Vector3f newBloxLoc = new Vector3f( impactW );
-				newBloxLoc.addLocal( closestCollision.getContactNormal().mult(0.5f) );
-				node.worldToLocal(newBloxLoc, newBloxLoc);
-				newBloxLoc = snapToGrid( newBloxLoc );
-				
-				BloxNode newBlox = new BloxNode("ExpBlox", getPhysicsSpace(), assetManager);
-				newBlox.setLocalTranslation( newBloxLoc );
-				node.attachChild( newBlox );
-				newBlox.materialize();
-				
-				// Not a spatial (collidable)... 
-//				newBlox.collideWith(rootNode, placementCollisionRes);
-
-				// Checking entire world for placement collison? rly.. ? oh ok..
-				for (CollisionResult collision : placementCollisionRes) {
-					System.out.println("ILLEGAL PLACEMENT! " + collision.toString());
+			if ( rayPicker.size() > 0) {
+				if ( closestCollision != null ) {
+					if ( rayPicker.getClosestCollision().getDistance() < closestCollision.getDistance() ) {
+						closestCollision = rayPicker.getClosestCollision();
+					}
+				} else {
+					closestCollision = rayPicker.getClosestCollision();
 				}
-				
-				debugMark2.setLocalTranslation(newBloxLoc);
-				node.attachChild(debugMark2);
-				
-				break;
-
-			} else {
-				rootNode.detachChild(debugMark1);
-				rootNode.detachChild(debugMark2);
-				rootNode.detachChild(debugMark3);
-				rootNode.detachChild(debugArrow1);
-				rootNode.detachChild(debugArrow2);
-				rootNode.detachChild(debugArrow3);
 			}
+		}
+		if (closestCollision == null )
+			System.out.println("[rayPicker]   no hits");
+		
+		return closestCollision;
+	}
+ 
+	public void rayCaster() {
+		
+		// Get collision
+		CollisionResult collision = this.rayPicker();
+		
+		//	Process collision
+		if ( collision != null ) {
+			float dist = collision.getDistance();
+			Geometry impactGeo = collision.getGeometry();
+			Vector3f impactW = collision.getContactPoint();
+			Vector3f impact = impactGeo.getParent().worldToLocal( impactW, null );
+			
+			System.out.println("[rayCaster]    impactGeo.name " + impactGeo.getName() + "   dist: " + dist );
+			System.out.println("[rayCaster]    impact " + impact + "   impactW: " + impactW ); 
+			System.out.println("[rayCaster]    normalLocW: " + collision.getContactNormal() );
+
+			// Debugging visuals
+			debugMark1.setLocalTranslation(impact);
+			impactGeo.getParent().attachChild(debugMark1);
+
+			debugArrow1.setLocalTranslation( impactW );
+			((Arrow)debugArrow1.getMesh()).setArrowExtent( collision.getContactNormal() );
+			rootNode.attachChild(debugArrow1);
+
+			Vector3f newLoc = new Vector3f( impactW );
+			newLoc.addLocal( collision.getContactNormal().mult(0.5f) );
+			impactGeo.getParent().worldToLocal(newLoc, newLoc);
+			newLoc = snapToGrid( newLoc );
+			
+			Geometry boxGeo = makeBlox("ExpGeo" + this.entitySequence() );
+			boxGeo.setLocalTranslation( newLoc );
+			impactGeo.getParent().attachChild( boxGeo );
+
+			impactGeo.getParent().getControl(RigidBodyControl.class).setCollisionShape( CollisionShapeFactory.createDynamicMeshShape( impactGeo.getParent() ));
+			
+			WireBox wBox = new WireBox();
+			wBox.fromBoundingBox( (BoundingBox)boxGeo.getModelBound() );
+			Geometry wBoxGeo = new Geometry("debugExpWire", wBox);
+	        Material wBoxMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+	        wBoxMat.setColor("Color", ColorRGBA.White);
+	        wBoxGeo.setMaterial( wBoxMat );
+	        // Necessary?
+			wBoxGeo.updateModelBound();
+			wBoxGeo.setLocalTranslation( boxGeo.getLocalTranslation() );
+			impactGeo.getParent().attachChild( wBoxGeo );
+				
+			if ( validatePlacement(boxGeo, true) ) {
+				Spacecraft sc = (Spacecraft)impactGeo.getParent().getUserData("Spacecraft");
+				sc.addPart( wBoxGeo.getLocalTranslation(), (byte)1 );
+			} else {
+				addFadeout(boxGeo, 4000);
+				addFadeout(wBoxGeo, 4000);
+				boxGeo.getMaterial().setColor("Color", new ColorRGBA(1.0f, 0.6f, 0.6f, 0.5f));
+			}
+			System.out.println("[rayCaster]    mBound:  " + boxGeo.getModelBound() + "    volume:  " +boxGeo.getModelBound().getVolume() );
+			
+//				OMG?
+//				jme3tools.optimize.GeometryBatchFactory.optimize(rootNode);
+
+			debugMark2.setLocalTranslation(newLoc);
+			impactGeo.getParent().attachChild(debugMark2);
+			
+
+		} else {
+			rootNode.detachChild(debugMark1);
+			rootNode.detachChild(debugMark2);
+			rootNode.detachChild(debugMark3);
+			rootNode.detachChild(debugArrow1);
+			rootNode.detachChild(debugArrow2);
+			rootNode.detachChild(debugArrow3);
 		}
 	}
 
@@ -863,6 +1146,10 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 		System.out.println( "v1 adj:    " + v1 );
 		System.out.println( "expect:    (2.01, 19.02, 22.03)" );
 		
+	}
+	
+	public int entitySequence() {
+		return entitySequence++;
 	}
 	
 
