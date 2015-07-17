@@ -14,7 +14,7 @@ import java.io.IOException;
 
 public class RtsCam implements Control {
 
-	private static enum Degree {
+	public static enum Degree {
 		SIDE,
 		FWD,
 		ROTATE,

@@ -30,7 +30,7 @@ public class Player {
 		} else if ( activeItem.getName().equals("RayCaster") ){
 			asg.rayCaster();
 		} else if ( activeItem.getName().equals("PlasmaBomb") ){
-			asg.plasmaBomb();
+//			asg.plasmaBomb();
 		}
 		// TODO Auto-generated method stub
 		

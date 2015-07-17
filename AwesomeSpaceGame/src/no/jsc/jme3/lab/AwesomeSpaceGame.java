@@ -78,7 +78,7 @@ import no.jsc.jme3.lab.entity.BloxNode;
 import no.jsc.jme3.lab.entity.FadeInfo;
 import no.jsc.jme3.lab.entity.Spacecraft;
 import no.jsc.jme3.lab.geom.Blox;
-import jme3test.bullet.BombControl;
+//import jme3test.bullet.BombControl;
 
 public class AwesomeSpaceGame extends SimpleApplication implements ActionListener, PhysicsCollisionListener {
 	public static final Quaternion YAW090    = new Quaternion().fromAngleAxis(FastMath.PI/2,   new Vector3f(0,1,0));
@@ -639,26 +639,26 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 	}
 
 	// TODO Depricated
-	protected void rotateCamera(float value, Vector3f axis){
-		Matrix3f mat = new Matrix3f();
-		float mouseSensitivity = 1f;
-		mat.fromAngleNormalAxis(mouseSensitivity * value, axis);
-
-		Vector3f up = cam.getUp();
-		Vector3f left = cam.getLeft();
-		Vector3f dir = cam.getDirection();
-
-		mat.mult(up, up);
-		mat.mult(left, left);
-		mat.mult(dir, dir);
-
-		Quaternion q = new Quaternion();
-		q.fromAxes(left, up, dir);
-		q.normalize();
-
-		cam.setAxes(q);
-		System.out.println("pre: " + dir + "   after: " + cam.getDirection());
-	}
+//	protected void rotateCamera(float value, Vector3f axis){
+//		Matrix3f mat = new Matrix3f();
+//		float mouseSensitivity = 1f;
+//		mat.fromAngleNormalAxis(mouseSensitivity * value, axis);
+//
+//		Vector3f up = cam.getUp();
+//		Vector3f left = cam.getLeft();
+//		Vector3f dir = cam.getDirection();
+//
+//		mat.mult(up, up);
+//		mat.mult(left, left);
+//		mat.mult(dir, dir);
+//
+//		Quaternion q = new Quaternion();
+//		q.fromAxes(left, up, dir);
+//		q.normalize();
+//
+//		cam.setAxes(q);
+//		System.out.println("pre: " + dir + "   after: " + cam.getDirection());
+//	}
 
 	private void togglePlayerEnviroment() {
 		if ( enviroment.equals( Enviroment.INTERIOR )) {
@@ -735,17 +735,18 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 	
 	@Override
 	public void collision(PhysicsCollisionEvent event) {
-		if (event.getObjectA() instanceof BombControl) {
-			final Spatial node = event.getNodeA();
-			effect.killAllParticles();
-			effect.setLocalTranslation(node.getLocalTranslation());
-			effect.emitAllParticles();
-		} else if (event.getObjectB() instanceof BombControl) {
-			final Spatial node = event.getNodeB();
-			effect.killAllParticles();
-			effect.setLocalTranslation(node.getLocalTranslation());
-			effect.emitAllParticles();
-		}
+//		if (event.getObjectA() instanceof BombControl) {
+//			final Spatial node = event.getNodeA();
+//			effect.killAllParticles();
+//			effect.setLocalTranslation(node.getLocalTranslation());
+//			effect.emitAllParticles();
+//		}
+//		else if (event.getObjectB() instanceof BombControl) {
+//			final Spatial node = event.getNodeB();
+//			effect.killAllParticles();
+//			effect.setLocalTranslation(node.getLocalTranslation());
+//			effect.emitAllParticles();
+//		}
 	}
 
 	public Geometry makeBlox(String name) {
@@ -1091,21 +1092,21 @@ public class AwesomeSpaceGame extends SimpleApplication implements ActionListene
 			rootNode.detachChild(debugArrow3);
 		}
 	}
-
-	public void plasmaBomb() {
-		//shootingChannel.setAnim("Dodge", 0.1f);
-		//shootingChannel.setLoopMode(LoopMode.DontLoop);
-		Geometry bulletg = new Geometry("bullet", bullet);
-		bulletg.setMaterial(matBullet);
-		bulletg.setShadowMode(ShadowMode.CastAndReceive);
-		bulletg.setLocalTranslation(characterControl.getPhysicsLocation().add(cam.getDirection().mult(2)));
-		RigidBodyControl bulletControl = new BombControl(bulletCollisionShape, 1);
-		bulletControl.setCcdMotionThreshold(0.1f);
-		bulletControl.setLinearVelocity(cam.getDirection().mult(80));
-		bulletg.addControl(bulletControl);
-		rootNode.attachChild(bulletg);
-		getPhysicsSpace().add(bulletControl);
-	}
+//
+//	public void plasmaBomb() {
+//		//shootingChannel.setAnim("Dodge", 0.1f);
+//		//shootingChannel.setLoopMode(LoopMode.DontLoop);
+//		Geometry bulletg = new Geometry("bullet", bullet);
+//		bulletg.setMaterial(matBullet);
+//		bulletg.setShadowMode(ShadowMode.CastAndReceive);
+//		bulletg.setLocalTranslation(characterControl.getPhysicsLocation().add(cam.getDirection().mult(2)));
+//		RigidBodyControl bulletControl = new BombControl(bulletCollisionShape, 1);
+//		bulletControl.setCcdMotionThreshold(0.1f);
+//		bulletControl.setLinearVelocity(cam.getDirection().mult(80));
+//		bulletg.addControl(bulletControl);
+//		rootNode.attachChild(bulletg);
+//		getPhysicsSpace().add(bulletControl);
+//	}
 
 	private PhysicsSpace getPhysicsSpace() {
 		return bulletAppState.getPhysicsSpace();

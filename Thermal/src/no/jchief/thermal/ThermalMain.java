@@ -56,7 +56,7 @@ public class ThermalMain extends SimpleApplication {
 			inputManager.setCursorVisible(true);
 
 			// Init simple scene
-			rootNode.attachChild( GeoFactory.createSimpleScene(assetManager) );
+			rootNode.attachChild( GeoFactory.createSimpleScene( ) );
 
 			// Init Camera
 			inputManager.removeListener(flyCam);
