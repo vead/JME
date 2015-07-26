@@ -1,9 +1,9 @@
-package no.jchief.akira.system;
+package no.jchief.stuxblox.system;
 
 import java.util.HashMap;
 
-import no.jchief.akira.AkiraMain;
-import no.jchief.akira.gameevent.InputEvent;
+import no.jchief.stuxblox.StuxBloxMain;
+import no.jchief.stuxblox.gameevent.InputEvent;
 
 import com.jme3.app.Application;
 import com.jme3.app.state.AbstractAppState;
@@ -16,19 +16,15 @@ import com.jme3.input.controls.KeyTrigger;
 
 public class CharacterInputSystem extends AbstractAppState implements ActionListener {
 	private HashMap<KeyTrigger, InputEvent.Type> keyMap;
-	private AkiraMain akira;
+	private StuxBloxMain sb;
 	private InputManager inputManager;
 	private GameEventSystem gameEventSystem;
-
-	boolean shift;
-	boolean ctrl;
-
 	
 	@Override
 	public void initialize(AppStateManager stateManager, Application app) {
-		this.akira = (AkiraMain)app;
-		this.inputManager = akira.getInputManager();
-		this.gameEventSystem = akira.getGameEventSystem();
+		this.sb = (StuxBloxMain)app;
+		this.inputManager = sb.getInputManager();
+		this.gameEventSystem = sb.getGameEventSystem();
 
 		this.keyMap = new HashMap<KeyTrigger, InputEvent.Type>();
 
@@ -41,10 +37,12 @@ public class CharacterInputSystem extends AbstractAppState implements ActionList
 
 	private void defaultKeyMap() {
 		
-		keyMap.put(new KeyTrigger(KeyInput.KEY_W), InputEvent.Type.UP);
+		keyMap.put(new KeyTrigger(KeyInput.KEY_W), InputEvent.Type.FORWARD);
 		keyMap.put(new KeyTrigger(KeyInput.KEY_A), InputEvent.Type.LEFT);
-		keyMap.put(new KeyTrigger(KeyInput.KEY_S), InputEvent.Type.DOWN);
+		keyMap.put(new KeyTrigger(KeyInput.KEY_S), InputEvent.Type.BACK);
 		keyMap.put(new KeyTrigger(KeyInput.KEY_D), InputEvent.Type.RIGHT);
+		keyMap.put(new KeyTrigger(KeyInput.KEY_SPACE), InputEvent.Type.UP);
+		keyMap.put(new KeyTrigger(KeyInput.KEY_C), InputEvent.Type.DOWN);
 		keyMap.put(new KeyTrigger(MouseInput.BUTTON_LEFT), InputEvent.Type.M1);
 		keyMap.put(new KeyTrigger(MouseInput.BUTTON_RIGHT), InputEvent.Type.M2);
 		//		
@@ -58,15 +56,6 @@ public class CharacterInputSystem extends AbstractAppState implements ActionList
 			inputManager.addMapping(press, kt);
 			inputManager.addListener(this, press);
 		}
-
-		// Add non configurable modifiers; shift and ctrl
-		inputManager.addMapping("shift", new KeyTrigger(KeyInput.KEY_LSHIFT));
-		inputManager.addMapping("shift", new KeyTrigger(KeyInput.KEY_RSHIFT));
-		inputManager.addMapping("ctrl", new KeyTrigger(KeyInput.KEY_LCONTROL));
-		inputManager.addMapping("ctrl", new KeyTrigger(KeyInput.KEY_RCONTROL));
-
-		inputManager.addListener(this, "shift", "ctrl");
-
 	}
 
 	@Override
@@ -74,12 +63,12 @@ public class CharacterInputSystem extends AbstractAppState implements ActionList
 		if ( !this.isEnabled() ) return;
 		System.out.println("[CharIS:onAction]; " + name + " isPressed: " + isPressed);
 
-		if ( name.equals("shift")) {
-			shift = isPressed;
-		} else if ( name.equals("ctrl") ) {
-			ctrl = isPressed;
-		} else {
-			gameEventSystem.processEvent( new InputEvent( InputEvent.Type.valueOf(name), true, isPressed, ctrl, shift, inputManager.getCursorPosition()));
-		}
+		gameEventSystem.processEvent( new InputEvent( InputEvent.Type.valueOf(name),
+													  isPressed,
+													  sb.getInputSystem().ctrl,
+													  sb.getInputSystem().shift,
+													  inputManager.getCursorPosition())
+		);
+		System.out.println("[CharIS:onAction]; done");
 	}
 }

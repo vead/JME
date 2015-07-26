@@ -5,10 +5,10 @@ public class Part {
 
 	
 	
-//	public Part(byte type) {
-//		super();
-//		this.type = type;
-//	}
+	public Part(byte type) {
+		super();
+		this.type = type;
+	}
 
 	public byte getType() {
 		return type;
